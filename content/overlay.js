@@ -28,8 +28,8 @@ var ARIA_LANDMARKS = {
 
 	// mapping of HTML5 elements to implicit roles
 	implicitRoles: {
-		HEADER: 'banner',       // must not be wrapped in a <section> or <article>
-		FOOTER: 'contentinfo',  // must not be wrapped in a <section> or <article>
+		HEADER: 'banner',       // must not be in a <section> or <article>
+		FOOTER: 'contentinfo',  // must not be in a <section> or <article>
 		MAIN: 'main',
 		ASIDE: 'complementary',
 		NAV: 'navigation'
@@ -39,8 +39,7 @@ var ARIA_LANDMARKS = {
 		this.menu = document.getElementById("landmarkPopup");
 
 		// Remove all of the items currently in the popup menu
-		for(var i = this.menu.childNodes.length - 1; i >= 0; i--)
-		{
+		for(var i = this.menu.childNodes.length - 1; i >= 0; i--) {
 			this.menu.removeChild(this.menu.childNodes.item(i));
 		}
 
@@ -64,26 +63,33 @@ var ARIA_LANDMARKS = {
 	},
 
 	// Recursive function for building XUL landmark menu
-	makeLandmarkMenu: function(currentElement, depth)
-	{
-		if (currentElement)
-		{
+	makeLandmarkMenu: function(currentElement, depth) {
+		if (currentElement) {
 			var role;
 			var i=0;
 			var currentElementChild = currentElement.childNodes[i];
 
-			while (currentElementChild)
-			{
+			while (currentElementChild) {
 				if (currentElementChild.nodeType == 1) {
-					// Support HTML5 (FIXME no conditional checks yet!)
-					if (currentElementChild.tagName) {
+					// Support HTML5 elements' native roles
+					var name = currentElementChild.tagName;
+					if (name) {
 						try {
 							role = ARIA_LANDMARKS.implicitRoles[currentElementChild.tagName];
 						} catch(e) {
 							role = null;
 						}
+
+						// Perform containment checks
+						if (name == 'HEADER' || name == 'FOOTER') {
+							var parent_name = currentElement.tagName;
+							if (parent_name == 'SECTION' || parent_name == 'ARTICLE') {
+								role = null;
+							}
+						}
 					}
 
+					// Elements with explicitly-set roles
 					if (currentElementChild.getAttribute) {
 						var tempRole = currentElementChild.getAttribute("role");
 						if (tempRole) {
@@ -91,6 +97,7 @@ var ARIA_LANDMARKS = {
 						}
 					}
 
+					// Add it if it's a landmark
 					if (role && ARIA_LANDMARKS.isLandmark(role, currentElementChild)) {
 						if (this.menu) {
 							var lastLandmarkedElement = this.landmarkedElements[this.landmarkedElements.length-1];
